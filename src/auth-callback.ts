@@ -68,8 +68,18 @@ export const handler: Handler = async (event) => {
       }
     );
 
-    console.log('Token response received');
+    console.log('Token response received:', tokenResponse.data);
     const { access_token, refresh_token, expires_in } = tokenResponse.data;
+
+    if (!access_token) {
+      throw new Error('No access token received from Product Hunt');
+    }
+
+    // Вычисляем дату истечения токена
+    let expiresAt = null;
+    if (typeof expires_in === 'number' && !isNaN(expires_in)) {
+      expiresAt = new Date(Date.now() + expires_in * 1000).toISOString();
+    }
 
     // Получаем данные пользователя
     console.log('Fetching user data...');
@@ -112,7 +122,7 @@ export const handler: Handler = async (event) => {
         telegram_id: telegramId,
         ph_access_token: access_token,
         ph_refresh_token: refresh_token,
-        ph_token_expires_at: new Date(Date.now() + expires_in * 1000).toISOString()
+        ph_token_expires_at: expiresAt
       });
 
     if (supabaseError) {
