@@ -9,21 +9,54 @@ const supabase = createClient(
 );
 
 export const handler: Handler = async (event) => {
-  // Получаем code и state из query параметров
-  const { code, state } = event.queryStringParameters || {};
-
-  if (!code || !state) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ error: 'Missing required parameters' }),
-    };
-  }
+  console.log('Received callback request:', {
+    queryParams: event.queryStringParameters,
+    headers: event.headers
+  });
 
   try {
+    // Получаем code и state из query параметров
+    const { code, state } = event.queryStringParameters || {};
+
+    console.log('Received parameters:', { code, state });
+
+    if (!code || !state) {
+      console.error('Missing required parameters:', { code, state });
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Missing required parameters' }),
+      };
+    }
+
+    // Проверяем наличие всех необходимых переменных окружения
+    const requiredEnvVars = [
+      'PRODUCTHUNT_CLIENT_ID',
+      'PRODUCTHUNT_CLIENT_SECRET',
+      'PRODUCTHUNT_REDIRECT_URI',
+      'SUPABASE_URL',
+      'SUPABASE_SERVICE_ROLE_KEY',
+      'TELEGRAM_BOT_TOKEN'
+    ];
+
+    const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+    console.log('Environment variables check:', {
+      missing: missingEnvVars,
+      redirectUri: process.env.PRODUCTHUNT_REDIRECT_URI
+    });
+    if (missingEnvVars.length > 0) {
+      console.error('Missing environment variables:', missingEnvVars);
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: 'Missing environment variables', missing: missingEnvVars }),
+      };
+    }
+
     // Получаем telegram_id из state
     const [telegramId] = state.split('_');
+    console.log('Extracted telegram ID:', { telegramId, state });
     
     // Обмениваем код на токен
+    console.log('Exchanging code for token...');
     const tokenResponse = await axios.post(
       'https://api.producthunt.com/v2/oauth/token',
       {
@@ -35,9 +68,11 @@ export const handler: Handler = async (event) => {
       }
     );
 
+    console.log('Token response received');
     const { access_token, refresh_token, expires_in } = tokenResponse.data;
 
     // Получаем данные пользователя
+    console.log('Fetching user data...');
     const userResponse = await axios.post(
       'https://api.producthunt.com/v2/api/graphql',
       {
@@ -62,10 +97,12 @@ export const handler: Handler = async (event) => {
       }
     );
 
+    console.log('User data received');
     const userData = userResponse.data.data.viewer.user;
 
     // Сохраняем данные в Supabase
-    await supabase
+    console.log('Saving user data to Supabase...');
+    const { error: supabaseError } = await supabase
       .from('users')
       .upsert({
         id: userData.id,
@@ -78,13 +115,23 @@ export const handler: Handler = async (event) => {
         ph_token_expires_at: new Date(Date.now() + expires_in * 1000).toISOString()
       });
 
-    // Отправляем уведомление в Telegram
-    await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      chat_id: telegramId,
-      text: `✅ Авторизация успешна!\n\nДобро пожаловать, ${userData.name}!\nВаш аккаунт ProductHunt @${userData.username} успешно подключен.`,
-      parse_mode: 'Markdown'
-    });
+    if (supabaseError) {
+      console.error('Supabase error:', supabaseError);
+      throw supabaseError;
+    }
 
+    // Отправляем уведомление в Telegram
+    console.log('Sending Telegram notification...');
+    await axios.post(
+      `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        chat_id: telegramId,
+        text: `✅ Авторизация успешна!\n\nДобро пожаловать, ${userData.name}!\nВаш аккаунт ProductHunt @${userData.username} успешно подключен.`,
+        parse_mode: 'Markdown'
+      }
+    );
+
+    console.log('Process completed successfully');
     // Возвращаем успешную страницу
     return {
       statusCode: 200,
@@ -138,10 +185,18 @@ export const handler: Handler = async (event) => {
       `
     };
   } catch (error) {
-    console.error('Error in OAuth callback:', error);
+    console.error('Error details:', {
+      message: error.message,
+      response: error.response?.data,
+      stack: error.stack
+    });
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Internal server error' }),
+      body: JSON.stringify({ 
+        error: 'Internal server error',
+        details: error.message,
+        response: error.response?.data 
+      }),
     };
   }
 };
