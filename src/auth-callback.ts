@@ -142,8 +142,8 @@ export const handler: Handler = async (event) => {
       `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`,
       {
         chat_id: telegramId,
-        text: `✅ Авторизация успешна!\n\nДобро пожаловать, ${userData.name}!\nВаш аккаунт ProductHunt @${userData.username} успешно подключен.`,
-        parse_mode: 'Markdown'
+        text: `✅ Авторизация успешна!\n\nДобро пожаловать, ${userData.name}!\nВаш аккаунт ProductHunt успешно подключен.\nUsername: ${userData.username}`,
+        parse_mode: 'HTML'
       }
     );
 
