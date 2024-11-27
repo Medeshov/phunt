@@ -52,8 +52,8 @@ export const handler: Handler = async (event) => {
     }
 
     // Получаем telegram_id из state
-    const [telegramId] = state.split('_');
-    console.log('Extracted telegram ID:', { telegramId, state });
+    const [telegramId, randomState] = state.split('_');
+    console.log('Extracted telegram ID:', { telegramId, randomState, state });
     
     // Обмениваем код на токен
     console.log('Exchanging code for token...');
