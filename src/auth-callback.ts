@@ -186,16 +186,17 @@ export const handler: Handler = async (event) => {
     };
   } catch (error) {
     console.error('Error details:', {
-      message: error.message,
-      response: error.response?.data,
-      stack: error.stack
+      message: error instanceof Error ? error.message : String(error),
+      response: (error as any)?.response?.data,
+      stack: error instanceof Error ? error.stack : undefined
     });
+
     return {
       statusCode: 500,
       body: JSON.stringify({ 
         error: 'Internal server error',
-        details: error.message,
-        response: error.response?.data 
+        details: error instanceof Error ? error.message : String(error),
+        response: (error as any)?.response?.data 
       }),
     };
   }
