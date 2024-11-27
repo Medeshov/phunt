@@ -54,7 +54,13 @@ export const handler: Handler = async (event) => {
     // Получаем telegram_id из state
     const [telegramId, randomState] = state.split('_');
     console.log('Extracted telegram ID:', { telegramId, randomState, state });
-    
+
+    // Проверяем, что telegram_id - это число
+    if (!telegramId || isNaN(Number(telegramId))) {
+      console.error('Invalid telegram_id in state:', { telegramId, state });
+      throw new Error('Invalid telegram_id in state parameter');
+    }
+
     // Обмениваем код на токен
     console.log('Exchanging code for token...');
     const tokenResponse = await axios.post(
