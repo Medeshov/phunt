@@ -152,49 +152,70 @@ export const handler: Handler = async (event) => {
     return {
       statusCode: 200,
       headers: {
-        'Content-Type': 'text/html',
+        'Content-Type': 'text/html; charset=utf-8',
       },
       body: `
         <!DOCTYPE html>
-        <html>
+        <html lang="ru">
           <head>
+            <meta charset="UTF-8">
             <title>Авторизация успешна</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
               body {
-                font-family: -apple-system, system-ui, BlinkMacSystemFont;
+                font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu;
                 display: flex;
                 justify-content: center;
                 align-items: center;
                 min-height: 100vh;
                 margin: 0;
                 background-color: #f5f5f5;
+                color: #333;
               }
               .container {
                 text-align: center;
-                padding: 2rem;
                 background: white;
-                border-radius: 10px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                max-width: 500px;
+                padding: 2rem;
+                border-radius: 12px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                max-width: 90%;
+                width: 400px;
               }
-              h1 { color: #4CAF50; }
+              h1 {
+                color: #da552f;
+                margin-bottom: 1rem;
+              }
+              p {
+                margin: 1rem 0;
+                line-height: 1.5;
+              }
+              .success-icon {
+                font-size: 48px;
+                margin-bottom: 1rem;
+              }
               .button {
                 display: inline-block;
-                padding: 10px 20px;
-                background-color: #4CAF50;
+                background-color: #da552f;
                 color: white;
+                padding: 12px 24px;
+                border-radius: 6px;
                 text-decoration: none;
-                border-radius: 5px;
-                margin-top: 20px;
+                margin-top: 1rem;
+                font-weight: 500;
+                transition: background-color 0.2s;
+              }
+              .button:hover {
+                background-color: #b54424;
               }
             </style>
           </head>
           <body>
             <div class="container">
-              <h1>✅ Авторизация успешна!</h1>
+              <div class="success-icon">✅</div>
+              <h1>Авторизация успешна!</h1>
               <p>Вы успешно авторизовались через ProductHunt.</p>
               <p>Можете вернуться в Telegram бот.</p>
-              <a href="https://t.me/your_bot_username" class="button">Вернуться в бот</a>
+              <a href="https://t.me/producthuntpromotion_bot" class="button">Вернуться в бот</a>
             </div>
           </body>
         </html>
