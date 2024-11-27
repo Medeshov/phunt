@@ -2,10 +2,10 @@
   "name": "producthunt-auth-service",
   "version": "1.0.0",
   "description": "Authentication service for ProductHunt Telegram Bot",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "dev": "netlify dev",
-    "build": "tsc && cp -r public dist/",
+    "build": "tsc && mkdir -p netlify/functions && cp -r dist/* netlify/functions/",
     "start": "node dist/index.js"
   },
   "dependencies": {
