@@ -1,4 +1,5 @@
 [build]
+  command = "npm run build"
   functions = "netlify/functions"
   publish = "public"
 
@@ -9,3 +10,6 @@
   from = "/oauth/callback"
   to = "/.netlify/functions/auth-callback"
   status = 200
+
+[build.environment]
+  NODE_VERSION = "18"
