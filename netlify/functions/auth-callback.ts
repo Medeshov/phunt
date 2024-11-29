@@ -53,6 +53,8 @@ const handler: Handler = async (event) => {
 
     const { access_token, refresh_token } = tokenResponse.data;
 
+    console.log('Token response:', JSON.stringify(tokenResponse.data, null, 2));
+
     // Get user info using the access token
     const userResponse = await axios.post(
       'https://api.producthunt.com/v2/api/graphql',
@@ -76,6 +78,12 @@ const handler: Handler = async (event) => {
         }
       }
     );
+
+    console.log('User response:', JSON.stringify(userResponse.data, null, 2));
+
+    if (!userResponse.data?.data?.viewer) {
+      throw new Error('Failed to get user data: ' + JSON.stringify(userResponse.data));
+    }
 
     const user = userResponse.data.data.viewer;
     const userId = state; // state contains the Telegram user ID
