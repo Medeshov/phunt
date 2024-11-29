@@ -106,12 +106,22 @@ const handler: Handler = async (event) => {
     const user = userResponse.data.data.viewer.user;
     const userId = state; // state contains the Telegram user ID
 
-    // Save token to SQLite database
-    const db = await initializeDatabase();
-    await db.run(
-      'INSERT OR REPLACE INTO tokens (user_id, access_token, refresh_token) VALUES (?, ?, ?)',
-      [userId, access_token, refresh_token]
-    );
+    // Save token using Python API
+    try {
+      await axios.post(`${process.env.PYTHON_API_URL}/save_token`, {
+        user_id: userId,
+        access_token: access_token,
+        refresh_token: refresh_token,
+        user_data: {
+          name: user.name,
+          username: user.username
+        }
+      });
+      console.log('Token saved to Python storage');
+    } catch (error) {
+      console.error('Failed to save token to Python storage:', error);
+      // Continue execution even if storage fails
+    }
 
     // Send success message to Telegram
     const telegramMessage = encodeURIComponent(`✅ Successfully connected to Product Hunt as ${user.name} (@${user.username})`);
