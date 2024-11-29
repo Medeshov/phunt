@@ -1,12 +1,34 @@
 import { Handler } from '@netlify/functions';
 import axios from 'axios';
-import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
+import path from 'path';
+import sqlite3 from 'sqlite3';
+import { open } from 'sqlite';
 
-// Инициализация Supabase клиента
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Инициализация базы данных
+const dbPath = path.join(process.cwd(), 'data', 'tokens.db');
+
+// Убедимся, что директория существует
+fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+
+async function initializeDb() {
+  const db = await open({
+    filename: dbPath,
+    driver: sqlite3.Database
+  });
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS tokens (
+      telegram_id INTEGER PRIMARY KEY,
+      access_token TEXT NOT NULL,
+      refresh_token TEXT,
+      expires_at TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  return db;
+}
 
 export const handler: Handler = async (event) => {
   console.log('Received callback request:', {
@@ -33,8 +55,6 @@ export const handler: Handler = async (event) => {
       'PRODUCTHUNT_CLIENT_ID',
       'PRODUCTHUNT_CLIENT_SECRET',
       'PRODUCTHUNT_REDIRECT_URI',
-      'SUPABASE_URL',
-      'SUPABASE_SERVICE_ROLE_KEY',
       'TELEGRAM_BOT_TOKEN'
     ];
 
@@ -43,6 +63,7 @@ export const handler: Handler = async (event) => {
       missing: missingEnvVars,
       redirectUri: process.env.PRODUCTHUNT_REDIRECT_URI
     });
+    
     if (missingEnvVars.length > 0) {
       console.error('Missing environment variables:', missingEnvVars);
       return {
@@ -116,25 +137,15 @@ export const handler: Handler = async (event) => {
     console.log('User data received');
     const userData = userResponse.data.data.viewer.user;
 
-    // Сохраняем данные в Supabase
-    console.log('Saving user data to Supabase...');
-    const { error: supabaseError } = await supabase
-      .from('users')
-      .upsert({
-        id: userData.id,
-        name: userData.name,
-        username: userData.username,
-        image: userData.profileImage,
-        telegram_id: telegramId,
-        ph_access_token: access_token,
-        ph_refresh_token: refresh_token,
-        ph_token_expires_at: expiresAt
-      });
-
-    if (supabaseError) {
-      console.error('Supabase error:', supabaseError);
-      throw supabaseError;
-    }
+    // Сохраняем токен в SQLite
+    console.log('Saving token to SQLite...');
+    const db = await initializeDb();
+    await db.run(
+      `INSERT OR REPLACE INTO tokens (telegram_id, access_token, refresh_token, expires_at)
+       VALUES (?, ?, ?, ?)`,
+      [Number(telegramId), access_token, refresh_token, expiresAt]
+    );
+    await db.close();
 
     // Отправляем уведомление в Telegram
     console.log('Sending Telegram notification...');
@@ -201,11 +212,10 @@ export const handler: Handler = async (event) => {
                 border-radius: 6px;
                 text-decoration: none;
                 margin-top: 1rem;
-                font-weight: 500;
                 transition: background-color 0.2s;
               }
               .button:hover {
-                background-color: #b54424;
+                background-color: #b33d1c;
               }
             </style>
           </head>
@@ -213,28 +223,20 @@ export const handler: Handler = async (event) => {
             <div class="container">
               <div class="success-icon">✅</div>
               <h1>Авторизация успешна!</h1>
-              <p>Вы успешно авторизовались через ProductHunt.</p>
-              <p>Можете вернуться в Telegram бот.</p>
-              <a href="https://t.me/producthuntpromotion_bot" class="button">Вернуться в бот</a>
+              <p>Вы успешно авторизовались через Product Hunt.</p>
+              <p>Теперь вы можете вернуться в Telegram и продолжить работу с ботом.</p>
+              <a href="https://t.me/producthunt_boost_bot" class="button">Вернуться в Telegram</a>
             </div>
           </body>
         </html>
       `
     };
-  } catch (error) {
-    console.error('Error details:', {
-      message: error instanceof Error ? error.message : String(error),
-      response: (error as any)?.response?.data,
-      stack: error instanceof Error ? error.stack : undefined
-    });
 
+  } catch (error) {
+    console.error('Error details:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ 
-        error: 'Internal server error',
-        details: error instanceof Error ? error.message : String(error),
-        response: (error as any)?.response?.data 
-      }),
+      body: JSON.stringify({ error: error.message || 'Internal server error' })
     };
   }
 };
