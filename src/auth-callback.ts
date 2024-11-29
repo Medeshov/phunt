@@ -232,11 +232,19 @@ export const handler: Handler = async (event) => {
       `
     };
 
-  } catch (error) {
-    console.error('Error details:', error);
+  } catch (error: any) {
+    console.error('Error details:', {
+      message: error?.message || 'Unknown error',
+      response: error?.response?.data,
+      stack: error?.stack
+    });
+
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: error.message || 'Internal server error' })
+      body: JSON.stringify({ 
+        error: error?.message || 'Internal server error',
+        details: error?.response?.data
+      })
     };
   }
 };
