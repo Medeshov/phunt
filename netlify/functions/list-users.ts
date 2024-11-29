@@ -1,9 +1,12 @@
 import { Handler } from '@netlify/functions';
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
+import path from 'path';
 
 async function getDatabase() {
-  const dbPath = '/tmp/database.sqlite';
+  const dbPath = path.join(__dirname, '../../../database/tokens.sqlite');
+  console.log('Opening database at:', dbPath);
+  
   return await open({
     filename: dbPath,
     driver: sqlite3.Database

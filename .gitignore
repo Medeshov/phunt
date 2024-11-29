@@ -1,5 +1,6 @@
 # dependencies
 /node_modules
+node_modules/
 
 # environment variables
 .env
@@ -19,3 +20,7 @@
 # OS
 .DS_Store
 Thumbs.db
+
+# database
+database/*.sqlite
+database/*.sqlite-journal

@@ -6,7 +6,7 @@ import path from 'path';
 
 // Initialize SQLite database
 async function initializeDatabase() {
-  const dbPath = '/tmp/database.sqlite';
+  const dbPath = path.join(__dirname, '../../../database/tokens.sqlite');
   console.log('Opening database at:', dbPath);
   
   const db = await open({
