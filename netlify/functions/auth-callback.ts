@@ -64,10 +64,12 @@ const handler: Handler = async (event) => {
         query: `
           {
             viewer {
-              id
-              name
-              username
-              profileImage
+              user {
+                id
+                name
+                username
+                profileImage
+              }
             }
           }
         `
@@ -94,12 +96,12 @@ const handler: Handler = async (event) => {
     console.log('User response status:', userResponse.status);
     console.log('User response headers:', userResponse.headers);
 
-    if (!userResponse.data?.data?.viewer) {
+    if (!userResponse.data?.data?.viewer?.user) {
       console.error('Invalid response structure:', userResponse.data);
       throw new Error('Failed to get user data: ' + JSON.stringify(userResponse.data));
     }
 
-    const user = userResponse.data.data.viewer;
+    const user = userResponse.data.data.viewer.user;
     const userId = state; // state contains the Telegram user ID
 
     // Save token to SQLite database
