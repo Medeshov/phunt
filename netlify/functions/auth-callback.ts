@@ -55,12 +55,14 @@ const handler: Handler = async (event) => {
 
     console.log('Token response:', JSON.stringify(tokenResponse.data, null, 2));
 
+    console.log('Starting GraphQL request with token:', access_token);
+
     // Get user info using the access token
     const userResponse = await axios.post(
       'https://api.producthunt.com/v2/api/graphql',
       {
         query: `
-          query {
+          {
             viewer {
               id
               name
@@ -77,11 +79,23 @@ const handler: Handler = async (event) => {
           'Accept': 'application/json'
         }
       }
-    );
+    ).catch(error => {
+      console.error('GraphQL request failed:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        error: error.message
+      });
+      throw error;
+    });
 
-    console.log('User response:', JSON.stringify(userResponse.data, null, 2));
+    console.log('Raw user response:', userResponse);
+    console.log('User response data:', JSON.stringify(userResponse.data, null, 2));
+    console.log('User response status:', userResponse.status);
+    console.log('User response headers:', userResponse.headers);
 
     if (!userResponse.data?.data?.viewer) {
+      console.error('Invalid response structure:', userResponse.data);
       throw new Error('Failed to get user data: ' + JSON.stringify(userResponse.data));
     }
 
